@@ -16,11 +16,11 @@ public class AirportRepository {
 
      private Map<Integer,Flight> flightMap;
 
-
+     private Map<Integer,Flight> passengerFlightMap;  //passengerId,flightId
     public AirportRepository() {
         this.airportMap = new HashMap<String,Airport>();
         this.flightMap=new HashMap<Integer,Flight>();
-
+        this.passengerFlightMap=new HashMap<Integer,Flight>();
     }
 
     public String addAirport(Airport airport){
@@ -52,18 +52,6 @@ public class AirportRepository {
         }
 
         return s1;
-    }
-
-    public String lexicography(String s1,String s2,int a) {
-        if (s1.charAt(a) > s2.charAt(a))
-            return s2;
-        if (s1.charAt(a) < s2.charAt(a))
-            return s1;
-        else {
-            a++;
-            return lexicography(s1, s2, a);
-
-        }
     }
 
         public double getShortestDurationOfPossibleBetweenTwoCities(City fromCity,City toCity){
@@ -115,9 +103,18 @@ public class AirportRepository {
         // then return a "FAILURE" message
         // Otherwise return a "SUCCESS" message
         // and also cancel the ticket that passenger had booked earlier on the given flightId
-
-        return null;
+        Flight flight=new Flight();
+         for(Integer id: passengerFlightMap.keySet()){
+             if(passengerFlightMap.containsValue(flight.getFlightId()==flightId)){
+                 passengerFlightMap.remove(id,flight);
+             }
+             else if(id!=passengerId || !passengerFlightMap.containsValue(flight.getFlightId())){
+                 return "FAILURE";
+             }
+         }
+         return "SUCCESS";
     }
+
 
 
     public int countOfBookingsDoneByPassengerAllCombined(Integer passengerId){
