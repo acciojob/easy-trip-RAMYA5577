@@ -43,8 +43,11 @@ public class AirportRepository {
                 size = airportMap.get(s).getNoOfTerminals();
                 s1 = s;
             }
-            if (airportMap.get(s).getNoOfTerminals() == size) {
-                s1 = lexicography(s1, s, 0);
+            if (airportMap.get(s).getNoOfTerminals() == size && s1.compareTo(s)>0){
+                s1=s;
+            }
+            if(airportMap.get(s).getNoOfTerminals()==size && s1.compareTo(s)<0){
+                s1=s1;
             }
         }
 
