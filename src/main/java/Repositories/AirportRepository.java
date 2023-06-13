@@ -4,6 +4,7 @@ import com.driver.model.Airport;
 import com.driver.model.City;
 import com.driver.model.Flight;
 import com.driver.model.Passenger;
+import io.swagger.models.auth.In;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,12 +16,16 @@ public class AirportRepository {
      private Map<String,Airport> airportMap;
 
      private Map<Integer,Flight> flightMap;
+     private Map<Integer,Passenger> passengerMap;
+     private Map<Integer,List<Passenger>> listOfPassengers;  //flightId,ListOfPassengers
 
-     private Map<Integer,Flight> passengerFlightMap;  //passengerId,flightId
+     private Map<Integer,Flight> passengerFlightMap;  //passengerId,flight
     public AirportRepository() {
         this.airportMap = new HashMap<String,Airport>();
         this.flightMap=new HashMap<Integer,Flight>();
         this.passengerFlightMap=new HashMap<Integer,Flight>();
+        this.passengerMap=new HashMap<Integer,Passenger>();
+        this.listOfPassengers=new HashMap<Integer,List<Passenger>>();
     }
 
     public String addAirport(Airport airport){
@@ -70,10 +75,15 @@ public class AirportRepository {
 
         //Calculate the total number of people who have flights on that day on a particular airport
         //This includes both the people who have come for a flight and who have landed on an airport after their flight
-//        Flight flight=new Flight();
-        int count=0;
 
-        return 0;
+        int count=0;   //no of people who was there in an airport on a particular date
+        for(int id: passengerFlightMap.keySet()){
+            if(passengerFlightMap.get(id).getFromCity().toString()==airportName && passengerFlightMap.get(id).getFlightDate()==date
+                    || passengerFlightMap.get(id).getToCity().toString()==airportName && passengerFlightMap.get(id).getFlightDate()==date){
+                count++;
+            }
+        }
+        return count;
     }
 
     public int calculateFlightFare(Integer flightId){
@@ -83,7 +93,13 @@ public class AirportRepository {
         //Suppose if 2 people have booked the flight already : the price of flight for the third person will be 3000 + 2*50 = 3100
         //This will not include the current person who is trying to book, he might also be just checking price
 
-        return 0;
+        int totalFare=0;
+        for (Integer id:listOfPassengers.keySet()){
+            if(id==flightId){
+               totalFare=3000+listOfPassengers.get(id).size()*50;
+            }
+        }
+        return totalFare;
 
     }
 
@@ -94,7 +110,21 @@ public class AirportRepository {
         //Also if the passenger has already booked a flight then also return "FAILURE".
         //else if you are able to book a ticket then return "SUCCESS"
 
-        return null;
+
+        for (Integer id: listOfPassengers.keySet()){
+            Flight flight=flightMap.get(id);
+            int capacityOfFlight= flight.getMaxCapacity();
+            int passengerId1 =passengerMap.get(id).getPassengerId();
+            if (capacityOfFlight<listOfPassengers.get(id).size() || passengerId1==passengerId){
+                return "FAILURE";
+            }
+            if(capacityOfFlight>listOfPassengers.get(id).size()){
+                passengerFlightMap.put(passengerId1,flight);
+
+                capacityOfFlight-=flight.getMaxCapacity();
+            }
+        }
+        return "SUCCESS";
     }
 
     public String cancelATicket(Integer flightId,Integer passengerId){
@@ -103,13 +133,13 @@ public class AirportRepository {
         // then return a "FAILURE" message
         // Otherwise return a "SUCCESS" message
         // and also cancel the ticket that passenger had booked earlier on the given flightId
-        Flight flight=new Flight();
+        Flight flight=flightMap.get(flightId);
          for(Integer id: passengerFlightMap.keySet()){
-             if(passengerFlightMap.containsValue(flight.getFlightId()==flightId)){
-                 passengerFlightMap.remove(id,flight);
-             }
-             else if(id!=passengerId || !passengerFlightMap.containsValue(flight.getFlightId())){
+             if(id!=passengerId || !passengerFlightMap.containsValue(flight.getFlightId())){
                  return "FAILURE";
+             }
+             if(passengerFlightMap.containsValue(flightId)){
+                 passengerFlightMap.remove(id,flight);
              }
          }
          return "SUCCESS";
@@ -120,16 +150,26 @@ public class AirportRepository {
     public int countOfBookingsDoneByPassengerAllCombined(Integer passengerId){
 
         //Tell the count of flight bookings done by a passenger: This will tell the total count of flight bookings done by a passenger :
-        return 0;
+        int count=0;
+        Passenger passenger=passengerMap.get(passengerId);
+
+        for (Integer id:passengerFlightMap.keySet()) {
+            Flight flight =passengerFlightMap.get(passengerId);
+            for(Integer flightId:listOfPassengers.keySet()){
+                if(flightId==flight.getFlightId()){
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
     public String addFlight(Flight flight){
-
         //Return a "SUCCESS" message string after adding a flight.
         flightMap.put(flight.getFlightId(),flight);
         return "SUCCESS";
     }
-
 
     public String getAirportNameFromFlightId(Integer flightId){
 
@@ -144,21 +184,37 @@ public class AirportRepository {
     }
 
 
-    public int calculateRevenueOfAFlight(Integer flightId){
+    public int calculateRevenueOfAFlight(Integer flightId) {
 
         //Calculate the total revenue that a flight could have
         //That is of all the passengers that have booked a flight till now and then calculate the revenue
         //Revenue will also decrease if some passenger cancels the flight
+        int revenue = 0;
+        int noOfPassengers=0;
 
-        return 0;
-    }
+        Passenger passenger=new Passenger();
+        List<Passenger> passengers = new ArrayList<>();
+
+        for (Integer id : listOfPassengers.keySet()) {
+            if (id == flightId) {
+                passengers = listOfPassengers.get(id);
+                passenger = passengers.get(passenger.getPassengerId());
+            }
+            noOfPassengers = passengers.size();
+            if (cancelATicket(passenger.getPassengerId(), flightId) == "SUCCESS") {
+                noOfPassengers--;
+            }
+        }
+        revenue=3000+noOfPassengers*50;
+                return revenue;
+        }
 
     public String addPassenger(Passenger passenger){
 
         //Add a passenger to the database
         //And return a "SUCCESS" message if the passenger has been added successfully.
-
-        return null;
+          passengerMap.put(passenger.getPassengerId(),passenger);
+          return "SUCCESS";
     }
 
 }
